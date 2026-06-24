@@ -870,13 +870,17 @@ async function saveSale() {
   const now = new Date();
   const date = now.toISOString().split('T')[0];
   const bsDate = getNepaliDate();
+  const notesVal = document.getElementById('notesInput').value.trim();
+  const itemsStr = tempItems.map(i => i.amount).join('+');
+  const combinedNotes = itemsStr ? (notesVal ? `[${itemsStr}] ${notesVal}` : `[${itemsStr}]`) : notesVal;
+
   const saleData = {
     action: 'saveSale',
     invoice: generateInvoice('INV'),
     customer: document.getElementById('customerInput').value.trim(),
     amount: total,
     payment: document.getElementById('paymentMethod').value,
-    notes: document.getElementById('notesInput').value.trim(),
+    notes: combinedNotes,
     photo: '', photoMimeType: 'image/jpeg',
     date, time: now.toLocaleTimeString('en-US', { hour12: false }),
     user: localStorage.getItem('user') || 'Unknown',
@@ -1110,10 +1114,25 @@ function saleCard(s, showActions = true) {
     <button class="btn-edit" onclick="openEditModal('${s.Invoice}','sale')">✏️ Edit</button>
     <button class="btn-delete" onclick="deleteRecord('${s.Invoice}','sale')">🗑️ Delete</button>
   </div>` : '';
+
+  // Items parse garne — [500+700+300] format bata
+  const notesRaw = s.Notes || '';
+  const itemMatch = notesRaw.match(/^\[([0-9+.]+)\](.*)/);
+  let itemsDisplay = '';
+  let notesDisplay = '';
+  if (itemMatch) {
+    const amounts = itemMatch[1].split('+').map(a => `रू.${parseFloat(a).toFixed(0)}`).join(' + ');
+    itemsDisplay = `<div class="details" style="color:#667eea;font-weight:500;">🛍️ ${amounts}</div>`;
+    notesDisplay = itemMatch[2].trim() ? `<div class="details">📝 ${itemMatch[2].trim()}</div>` : '';
+  } else if (notesRaw) {
+    notesDisplay = `<div class="details">📝 ${notesRaw}</div>`;
+  }
+
   return `<div class="sale-card">
     <div class="sale-header"><span>🧾 ${s.Invoice||'N/A'}</span><span class="amount">${fmt(s.Amount)}</span></div>
     <div class="details">📅 ${dateStr} ${s.Time||''} • 👤 ${s.Customer||'-'} • 💳 ${s.Payment||'-'} • 🧑 ${s.User||'-'}</div>
-    ${s.Notes ? `<div class="details">📝 ${s.Notes}</div>` : ''}
+    ${itemsDisplay}
+    ${notesDisplay}
     ${s['Photo URL'] && s['Photo URL'].length > 10 ? `<div class="photo-container"><img src="${s['Photo URL']}" loading="lazy" onclick="openZoom(this.src)"></div>` : ''}
     ${actions}
   </div>`;
