@@ -1,7 +1,7 @@
 const https = require('https');
 
 exports.handler = async function(event) {
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyv-QLqPnb8PJoXHUvVQbEFiRCtQOHp5yqILrIfDmO51Vi-V3DtzyyJwaUfB6i9QDI/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAClmRUihDHuefRHe7ZpoWfJJRgJZCO6twq36FaPUawBOC3EtMWWtFUMDLAUIxjA/exec";
 
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -18,7 +18,7 @@ exports.handler = async function(event) {
   const action = event.queryStringParameters && event.queryStringParameters.action;
   const targetUrl = action ? SCRIPT_URL + '?action=' + action : SCRIPT_URL;
 
-  function fetchWithRedirect(url, options, body, redirectCount) {
+  function fetchWithRedirect(url, method, body, redirectCount) {
     redirectCount = redirectCount || 0;
     if (redirectCount > 5) return Promise.reject(new Error('Too many redirects'));
 
@@ -27,13 +27,13 @@ exports.handler = async function(event) {
       const reqOptions = {
         hostname: urlObj.hostname,
         path: urlObj.pathname + urlObj.search,
-        method: options.method || 'GET',
+        method: method || 'GET',
         headers: { 'Content-Type': 'text/plain' }
       };
 
       const req = https.request(reqOptions, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          resolve(fetchWithRedirect(res.headers.location, { method: 'GET' }, null, redirectCount + 1));
+          resolve(fetchWithRedirect(res.headers.location, 'GET', null, redirectCount + 1));
           return;
         }
         let data = '';
@@ -48,11 +48,15 @@ exports.handler = async function(event) {
   }
 
   try {
-    const data = await fetchWithRedirect(targetUrl, { method: event.httpMethod }, event.body);
+    const data = await fetchWithRedirect(targetUrl, event.httpMethod, event.body);
+    const resolved = await data;
     return {
       statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      body: typeof data === 'string' ? data : JSON.stringify(data)
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      },
+      body: typeof resolved === 'string' ? resolved : JSON.stringify(resolved)
     };
   } catch(err) {
     return {
