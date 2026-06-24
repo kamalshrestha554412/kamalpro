@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KS Cosmetics POS v3.0</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#f0f2f5;min-height:100vh;display:flex;justify-content:center}
+.app{max-width:480px;width:100%;padding:0 16px 40px;background:#f0f2f5;min-height:100vh}
+.loader-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:9999}
+.loader-overlay.active{display:flex}
+.loader-spinner{width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid #667eea;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{100%{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:12px;font-size:.9rem;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:none;z-index:10000;max-width:90%;text-align:center}
+.toast.show{display:block;animation:fadeUp .3s ease-out}
+.toast.success{background:#10b981}
+.toast.error{background:#ef4444}
+.toast.warning{background:#f59e0b}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#8b5cf6 100%);padding:14px 16px;border-radius:20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;box-shadow:0 8px 30px rgba(102,126,234,0.35)}
+.header .logo h1{font-size:1.1rem;font-weight:700}
+.header .logo small{opacity:.85;font-size:.68rem;display:block}
+.header-right{display:flex;align-items:center;gap:8px}
+.header .user{background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;font-size:.75rem}
+.logout-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:5px 12px;font-size:.75rem;cursor:pointer;transition:all .2s}
+.logout-btn:hover{background:rgba(255,255,255,0.25)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat{background:#fff;border-radius:14px;padding:12px 14px;border-left:4px solid #667eea;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:all .2s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.06)}
+.stat.green{border-left-color:#10b981}
+.stat.orange{border-left-color:#f59e0b}
+.stat.purple{border-left-color:#8b5cf6}
+.stat.red{border-left-color:#ef4444}
+.stat .label{font-size:.6rem;color:#aaa;text-transform:uppercase;letter-spacing:.5px}
+.stat .value{font-size:1rem;font-weight:700;color:#1a1a2e;margin-top:2px}
+.stat .value.profit{color:#10b981}
+.stat .value.loss{color:#ef4444}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.menu a{background:#fff;border-radius:14px;padding:12px 4px;text-align:center;text-decoration:none;color:inherit;border:1px solid #f0f0f0;transition:all .3s;box-shadow:0 2px 8px rgba(0,0,0,0.02);cursor:pointer;display:block}
+.menu a:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(0,0,0,0.08);border-color:#667eea}
+.menu a .icon{font-size:1.5rem;display:block}
+.menu a span{font-size:.62rem;color:#555;margin-top:3px;display:block}
+.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.04);border:1px solid #f0f0f0}
+.card h3{font-size:.95rem;color:#1a1a2e;margin-bottom:10px;font-weight:600}
+.amount-row{display:flex;gap:8px}
+.amount-row input{flex:1;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:1rem;background:#f8fafc;transition:all .2s}
+.amount-row input:focus{border-color:#667eea;outline:none;background:#fff;box-shadow:0 0 0 4px rgba(102,126,234,0.1)}
+.amount-row button{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;padding:0 20px;font-size:1.3rem;cursor:pointer;transition:all .2s}
+.item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #f3f4f6}
+.item .del{color:#ef4444;cursor:pointer;font-size:1.1rem;background:0 0;border:none;padding:4px 8px;border-radius:8px}
+.total-box{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-radius:12px;padding:12px;text-align:center;margin-top:8px;display:none}
+.total-box strong{font-size:1.3rem}
+.input-full{width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:.95rem;margin-bottom:10px;background:#f8fafc;transition:all .2s}
+.input-full:focus{border-color:#667eea;outline:none;background:#fff;box-shadow:0 0 0 4px rgba(102,126,234,0.1)}
+select.input-full{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+textarea.input-full{resize:vertical;min-height:50px}
+.photo-input-label{display:block;width:100%;padding:12px;border:2px dashed #d1d5db;border-radius:12px;background:#f8fafc;cursor:pointer;transition:all .2s;text-align:center;font-size:.85rem;color:#888}
+.photo-input-label:hover{border-color:#667eea;background:#f5f3ff;color:#667eea}
+.photo-input-hidden{display:none}
+#photoPreview img,#purchasePhotoPreview img{max-width:100%;border-radius:10px;max-height:200px;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:zoom-in;margin-top:8px}
+.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;width:100%;padding:14px;margin-top:10px;transition:all .3s;box-shadow:0 4px 15px rgba(102,126,234,0.3)}
+.btn-primary:hover{transform:scale(1.02);box-shadow:0 6px 25px rgba(102,126,234,0.4)}
+.btn-purchase{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;width:100%;padding:14px;margin-top:10px;transition:all .3s;box-shadow:0 4px 15px rgba(239,68,68,0.3)}
+.btn-secondary{background:#fff;color:#667eea;border:1.5px solid #667eea;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;width:100%;padding:13px;margin-top:8px;transition:all .3s}
+.btn-danger{background:#ef4444;color:#fff;border:none;border-radius:12px;padding:14px;font-size:.95rem;font-weight:600;cursor:pointer;width:100%;transition:all .3s;margin-top:8px}
+.sale-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid #f0f0f0;transition:all .3s;box-shadow:0 2px 8px rgba(0,0,0,0.02)}
+.sale-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06);transform:translateY(-2px)}
+.sale-card.purchase-card{border-left:3px solid #ef4444}
+.sale-card .sale-header{display:flex;justify-content:space-between;font-weight:600;font-size:.9rem}
+.sale-card .amount{color:#667eea}
+.sale-card .amount.expense{color:#ef4444}
+.sale-card .details{font-size:.78rem;color:#6b7280;margin-top:3px}
+.sale-card .photo-container{margin-top:8px;text-align:center}
+.sale-card .photo-container img{max-width:100%;max-height:200px;border-radius:10px;cursor:zoom-in}
+.sale-card .no-photo{padding:10px;text-align:center;color:#aaa;background:#f9fafb;border-radius:10px;font-size:.78rem;margin-top:6px}
+.empty{text-align:center;padding:25px 15px;color:#aaa;font-size:.9rem}
+.back-btn{background:0 0;border:none;font-size:1.3rem;color:#667eea;cursor:pointer;padding:0 8px}
+.sub-header{display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:10px}
+.sub-header h2{font-size:1.1rem;color:#1a1a2e;font-weight:600}
+.login-container{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.login-card{background:#fff;padding:32px 24px;border-radius:24px;box-shadow:0 8px 40px rgba(0,0,0,0.08);width:100%;max-width:400px;text-align:center}
+.login-card .logo-icon{font-size:3.5rem;margin-bottom:8px}
+.login-card h1{font-size:1.8rem;color:#1a1a2e}
+.login-card p{color:#888;margin-bottom:20px;font-size:.9rem}
+.login-card .error{color:#ef4444;font-size:.85rem;margin-top:8px;display:none}
+.offline-banner{display:none;background:#f59e0b;color:#fff;text-align:center;font-size:.75rem;padding:6px;border-radius:10px;margin-bottom:10px}
+.offline-banner.show{display:block}
+.sync-badge{position:fixed;top:10px;right:10px;background:#1a1a2e;color:#fff;font-size:.65rem;padding:4px 10px;border-radius:20px;z-index:9998;display:none}
+.sync-badge.show{display:block}
+.zoom-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:none;justify-content:center;align-items:center;z-index:10001;padding:20px}
+.zoom-modal.show{display:flex}
+.zoom-modal img{max-width:100%;max-height:100%;border-radius:8px}
+.zoom-modal .close-zoom{position:absolute;top:20px;right:20px;color:#fff;font-size:2rem;background:0 0;border:none;cursor:pointer}
+.hisab-summary{background:linear-gradient(135deg,#1a1a2e,#2d2d4e);color:#fff;border-radius:18px;padding:18px;margin-bottom:14px}
+.hisab-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)}
+.hisab-row:last-child{border-bottom:none;padding-top:12px}
+.hisab-row .hlabel{font-size:.8rem;opacity:.8}
+.hisab-row .hval{font-weight:700;font-size:1rem}
+.hisab-row .hval.green{color:#34d399}
+.hisab-row .hval.red{color:#f87171}
+.hisab-row.total-row .hlabel{font-size:.9rem;font-weight:600;opacity:1}
+.hisab-row.total-row .hval{font-size:1.2rem}
+.tab-bar{display:flex;gap:6px;margin-bottom:14px;background:#fff;border-radius:12px;padding:5px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.tab-btn{flex:1;padding:8px 4px;border:none;border-radius:9px;font-size:.75rem;cursor:pointer;background:0 0;color:#888;font-weight:500;transition:all .2s}
+.tab-btn.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.pref-btn{flex:1;padding:9px 6px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:.78rem;cursor:pointer;background:#f8fafc;color:#555;transition:all .2s;font-weight:500}
+.pref-btn.pref-active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:#667eea}
+.perm-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f3f4f6}
+.perm-info{display:flex;align-items:center;gap:10px}
+.perm-icon{font-size:1.3rem}
+.perm-label{font-size:.85rem;font-weight:500;color:#1a1a2e}
+.perm-sub{font-size:.7rem;color:#aaa;margin-top:1px}
+.toggle{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:26px;transition:.3s}
+.slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:linear-gradient(135deg,#667eea,#764ba2)}
+.toggle input:checked+.slider:before{transform:translateX(20px)}
+.search-box{position:relative;margin-bottom:12px}
+.search-box input{padding-left:36px}
+.search-box .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#aaa;font-size:.9rem}
+.activity-log{max-height:300px;overflow-y:auto}
+.log-item{font-size:.75rem;color:#666;padding:8px 0;border-bottom:1px solid #f3f4f6}
+.log-item b{color:#1a1a2e}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.stat,.card,.sale-card,.menu a{animation:fadeInUp .4s ease-out}
+</style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loaderOverlay"><div class="loader-spinner"></div></div>
+<div class="toast" id="toast"></div>
+<div class="sync-badge" id="syncBadge">⏳ Sync हुँदै...</div>
+<div class="zoom-modal" id="zoomModal" onclick="closeZoom(event)">
+  <button class="close-zoom" onclick="closeZoom(event)">✕</button>
+  <img id="zoomImg" src="" alt="zoom">
+</div>
+
+<div class="app" id="app">
+
+<!-- LOGIN -->
+<div id="loginScreen">
+<div class="login-container">
+<div class="login-card">
+  <div class="logo-icon">💄</div>
+  <h1>KS Cosmetics</h1>
+  <p>बिक्री रेकर्ड v3.0</p>
+  <input type="text" id="loginUser" class="input-full" placeholder="Username" autocomplete="username">
+  <input type="password" id="loginPass" class="input-full" placeholder="Password" autocomplete="current-password">
+  <button onclick="handleLogin()" class="btn-primary">🚀 लगइन</button>
+  <div class="error" id="loginError">❌ गलत Username वा Password</div>
+</div>
+</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none;">
+
+<header class="header">
+  <div class="logo">
+    <h1>💄 KS Cosmetics</h1>
+    <small>बिक्री रेकर्ड v3.0</small>
+  </div>
+  <div class="header-right">
+    <div class="user" id="userDisplay">👤 Owner</div>
+    <button onclick="handleLogout()" class="logout-btn">🚪 बाहिर</button>
+  </div>
+</header>
+
+<div class="offline-banner" id="offlineBanner">📡 Offline — डाटा लोकल सेभ हुनेछ</div>
+
+<div class="stats" id="dashStats">
+  <div class="stat"><div class="label">💰 आजको बिक्री</div><div class="value" id="statToday">रू. 0</div></div>
+  <div class="stat red"><div class="label">🛒 आजको खरीद</div><div class="value" id="statTodayPurchase">रू. 0</div></div>
+  <div class="stat green"><div class="label">📈 आजको नाफा</div><div class="value" id="statTodayProfit">रू. 0</div></div>
+  <div class="stat purple"><div class="label">📊 कुल बिक्री</div><div class="value" id="statTotal">रू. 0</div></div>
+</div>
+
+<div class="menu" id="mainMenu">
+  <a onclick="showPage('new')"><span class="icon">💰</span><span>नयाँ बिक्री</span></a>
+  <a onclick="showPage('purchase')"><span class="icon">🛒</span><span>खरीद</span></a>
+  <a onclick="showPage('hisab')"><span class="icon">📊</span><span>हिसाब</span></a>
+  <a onclick="showPage('today')"><span class="icon">📅</span><span>आजको</span></a>
+  <a onclick="showPage('all')"><span class="icon">📜</span><span>सबै</span></a>
+  <a onclick="showPage('settings')"><span class="icon">⚙️</span><span>सेटिङ</span></a>
+</div>
+
+<div id="recentSection">
+  <div style="font-weight:600;font-size:.85rem;margin-bottom:8px;color:#1a1a2e;">🕐 हालैका बिक्री</div>
+  <div id="recentList"><div class="empty">📭 कुनै बिक्री छैन</div></div>
+</div>
+
+<!-- NEW SALE -->
+<div id="pageNew" style="display:none;">
+  <div class="sub-header">
+    <button onclick="showPage('home')" class="back-btn">←</button>
+    <h2>💰 नयाँ बिक्री</h2><span></span>
+  </div>
+  <div class="card">
+    <h3>📊 रकम थप्नुहोस्</h3>
+    <div class="amount-row">
+      <input type="number" id="amountInput" placeholder="रकम" step="100" min="0"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addAmount();}">
+      <button onclick="addAmount()">➕</button>
+    </div>
+    <div id="itemList"><div class="empty">📭 कुनै रकम छैन</div></div>
+    <div class="total-box" id="totalBox">💰 जम्मा: <strong id="totalAmount">रू. 0.00</strong></div>
+  </div>
+  <div class="card">
+    <h3>👤 ग्राहक विवरण</h3>
+    <input type="text" id="customerInput" class="input-full" placeholder="ग्राहकको नाम (ऐच्छिक)">
+    <select id="paymentMethod" class="input-full">
+      <option value="नगद">💳 नगद</option>
+      <option value="QR">📱 QR</option>
+      <option value="बैंक">🏦 बैंक</option>
+      <option value="चेक">📄 चेक</option>
+    </select>
+    <textarea id="notesInput" class="input-full" placeholder="📝 नोट्स" rows="2"></textarea>
+  </div>
+  <div class="card" id="salePhotoCard">
+    <h3>📸 बिक्रीको फोटो</h3>
+    <label for="photoInput" class="photo-input-label">📷 फोटो छान्नुहोस् वा खिच्नुहोस्</label>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" class="photo-input-hidden">
+    <div id="photoPreview"></div>
+  </div>
+  <button onclick="saveSale()" class="btn-primary">✅ बिक्री सेभ गर्नुहोस्</button>
+</div>
+
+<!-- PURCHASE -->
+<div id="pagePurchase" style="display:none;">
+  <div class="sub-header">
+    <button onclick="showPage('home')" class="back-btn">←</button>
+    <h2>🛒 खरीद रेकर्ड</h2><span></span>
+  </div>
+  <div class="card">
+    <h3>💸 खरीद रकम</h3>
+    <div class="amount-row">
+      <input type="number" id="purchaseAmountInput" placeholder="खरीद रकम" step="100" min="0"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addPurchaseAmount();}">
+      <button onclick="addPurchaseAmount()" style="background:linear-gradient(135deg,#ef4444,#dc2626)">➕</button>
+    </div>
+    <div id="purchaseItemList"><div class="empty">📭 कुनै रकम छैन</div></div>
+    <div class="total-box" id="purchaseTotalBox" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+      🛒 जम्मा: <strong id="purchaseTotalAmount">रू. 0.00</strong>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📋 खरीद विवरण</h3>
+    <input type="text" id="supplierInput" class="input-full" placeholder="सप्लायरको नाम (ऐच्छिक)">
+    <select id="purchasePaymentMethod" class="input-full">
+      <option value="नगद">💳 नगद</option>
+      <option value="QR">📱 QR</option>
+      <option value="बैंक">🏦 बैंक</option>
+      <option value="उधारो">📝 उधारो</option>
+    </select>
+    <textarea id="purchaseNotesInput" class="input-full" placeholder="📝 के-के सामान किन्नुभयो?" rows="3"></textarea>
+  </div>
+  <div class="card" id="purchasePhotoCard">
+    <h3>📸 बिलको फोटो</h3>
+    <p style="font-size:.75rem;color:#888;margin-bottom:8px;">⚠️ खरीद बिलको फोटो — Google Drive मा सेभ हुन्छ</p>
+    <label for="purchasePhotoInput" class="photo-input-label">📷 बिलको फोटो खिच्नुहोस्</label>
+    <input type="file" id="purchasePhotoInput" accept="image/*" capture="environment" class="photo-input-hidden">
+    <div id="purchasePhotoPreview"></div>
+  </div>
+  <button onclick="savePurchase()" class="btn-purchase">🛒 खरीद सेभ गर्नुहोस्</button>
+</div>
+
+<!-- HISAB -->
+<div id="pageHisab" style="display:none;">
+  <div class="sub-header">
+    <button onclick="showPage('home')" class="back-btn">←</button>
+    <h2>📊 हिसाब किताब</h2><span></span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showHisabTab('today')" id="tabHisabToday">📅 आज</button>
+    <button class="tab-btn" onclick="showHisabTab('month')" id="tabHisabMonth">🗓️ महिना</button>
+    <button class="tab-btn" onclick="showHisabTab('all')" id="tabHisabAll">📊 सबै</button>
+  </div>
+  <div id="hisabContent"></div>
+</div>
+
+<!-- TODAY -->
+<div id="pageToday" style="display:none;">
+  <div class="sub-header">
+    <button onclick="showPage('home')" class="back-btn">←</button>
+    <h2>📅 आजको रेकर्ड</h2><span></span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTodayTab('sale')" id="tabTodaySale">💰 बिक्री</button>
+    <button class="tab-btn" onclick="showTodayTab('purchase')" id="tabTodayPurchase">🛒 खरीद</button>
+  </div>
+  <div id="todayList"></div>
+</div>
+
+<!-- ALL RECORDS -->
+<div id="pageAll" style="display:none;">
+  <div class="sub-header">
+    <button onclick="showPage('home')" class="back-btn">←</button>
+    <h2>📜 सबै रेकर्ड</h2><span></span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showAllTab('sale')" id="tabAllSale">💰 बिक्री</button>
+    <button class="tab-btn" onclick="showAllTab('purchase')" id="tabAllPurchase">🛒 खरीद</button>
+  </div>
+  <!-- ✅ Search by invoice, customer, date -->
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" class="input-full" placeholder="Invoice, ग्राहक वा मिति खोज्नुहोस्" oninput="renderAllContent()">
+  </div>
+  <div id="allList"></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="pageSettings" style="display:none;">
+  <div class="sub-header">
+    <button onclick="showPage('home')" class="back-btn">←</button>
+    <h2>⚙️ व्यवस्थापन</h2><span></span>
+  </div>
+  <div class="stats" style="margin-bottom:14px;">
+    <div class="stat"><div class="label">🧾 बिक्री बिल</div><div class="value" id="settingsTotal">0</div></div>
+    <div class="stat green"><div class="label">💰 बिक्री</div><div class="value" id="settingsAmount">रू. 0</div></div>
+    <div class="stat red"><div class="label">🛒 खरीद</div><div class="value" id="settingsPurchase">रू. 0</div></div>
+  </div>
+
+  <!-- Date System -->
+  <div class="card">
+    <h3>📅 मिति प्रणाली</h3>
+    <p style="font-size:.75rem;color:#888;margin-bottom:10px;">बिक्री र रिपोर्टमा कुन मिति देखाउने?</p>
+    <div style="display:flex;gap:8px;">
+      <button onclick="savePref('dateSystem','BS')" id="prefDateBS" class="pref-btn pref-active">🇳🇵 BS</button>
+      <button onclick="savePref('dateSystem','AD')" id="prefDateAD" class="pref-btn">🌍 AD</button>
+    </div>
+    <p style="font-size:.7rem;color:#aaa;margin-top:8px;" id="prefDateNote">अहिले: BS मिति</p>
+  </div>
+
+  <!-- Owner only -->
+  <div id="ownerOnlySettings">
+    <div class="card">
+      <h3>👤 Staff अनुमति</h3>
+      <div class="perm-row">
+        <div class="perm-info"><span class="perm-icon">💰</span><div><div class="perm-label">नयाँ बिक्री</div><div class="perm-sub">Sale record</div></div></div>
+        <label class="toggle"><input type="checkbox" id="permSale" checked onchange="savePermissions()"><span class="slider"></span></label>
+      </div>
+      <div class="perm-row">
+        <div class="perm-info"><span class="perm-icon">🛒</span><div><div class="perm-label">खरीद</div><div class="perm-sub">Purchase record</div></div></div>
+        <label class="toggle"><input type="checkbox" id="permPurchase" onchange="savePermissions()"><span class="slider"></span></label>
+      </div>
+      <div class="perm-row">
+        <div class="perm-info"><span class="perm-icon">📅</span><div><div class="perm-label">आजको हेर्ने</div><div class="perm-sub">Today view</div></div></div>
+        <label class="toggle"><input type="checkbox" id="permToday" checked onchange="savePermissions()"><span class="slider"></span></label>
+      </div>
+      <div class="perm-row">
+        <div class="perm-info"><span class="perm-icon">📜</span><div><div class="perm-label">सबै हेर्ने</div><div class="perm-sub">All history</div></div></div>
+        <label class="toggle"><input type="checkbox" id="permAll" onchange="savePermissions()"><span class="slider"></span></label>
+      </div>
+      <div class="perm-row">
+        <div class="perm-info"><span class="perm-icon">📊</span><div><div class="perm-label">हिसाब हेर्ने</div><div class="perm-sub">Profit/loss</div></div></div>
+        <label class="toggle"><input type="checkbox" id="permHisab" onchange="savePermissions()"><span class="slider"></span></label>
+      </div>
+      <div class="perm-row" style="border-bottom:none;">
+        <div class="perm-info"><span class="perm-icon">📸</span><div><div class="perm-label">फोटो खिच्ने</div><div class="perm-sub">Photo upload</div></div></div>
+        <label class="toggle"><input type="checkbox" id="permPhoto" checked onchange="savePermissions()"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🚧 Staff रकम सीमा</h3>
+      <label style="font-size:.75rem;color:#666;">💰 एक बिक्रीको अधिकतम</label>
+      <input type="number" id="limitPerSale" class="input-full" placeholder="जस्तै: 20000" min="0">
+      <label style="font-size:.75rem;color:#666;">📅 दैनिक अधिकतम</label>
+      <input type="number" id="limitDaily" class="input-full" placeholder="जस्तै: 50000" min="0">
+      <button onclick="saveStaffLimits()" class="btn-secondary">✅ Limit सेभ</button>
+    </div>
+
+    <!-- ✅ Password change — improved -->
+    <div class="card">
+      <h3>🔑 Password परिवर्तन</h3>
+      <select id="pwUser" class="input-full">
+        <option value="owner">👤 Owner</option>
+        <option value="staff">👥 Staff</option>
+      </select>
+      <input type="password" id="pwOld" class="input-full" placeholder="Owner को हालको Password" autocomplete="current-password">
+      <input type="password" id="pwNew" class="input-full" placeholder="नयाँ Password (कम्तिमा 6 अक्षर)" autocomplete="new-password">
+      <input type="password" id="pwConfirm" class="input-full" placeholder="नयाँ Password पुनः" autocomplete="new-password">
+      <button onclick="changePassword()" class="btn-secondary">🔑 Password परिवर्तन</button>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card">
+      <h3>📋 Activity Log</h3>
+      <div class="activity-log" id="activityLogDisplay"></div>
+    </div>
+
+    <button onclick="backupData()" class="btn-secondary">💾 Backup डाउनलोड (JSON)</button>
+    <button onclick="deleteAllData()" class="btn-danger">🗑️ Local डाटा मेट्नुहोस्</button>
+    <div style="text-align:center;color:#ef4444;font-size:.75rem;margin-top:8px;">⚠️ Google Sheet डाटा म्यानुअल मेट्नुस्</div>
+  </div>
+
+  <div id="pendingSyncBox" style="margin-top:14px;"></div>
+</div>
+
+</div><!-- /mainApp -->
+</div><!-- /app -->
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SCRIPT_URL = "/.netlify/functions/proxy";
+
+// ============================================================
+// ✅ BS DATE CONVERSION — सही NepaliDate library logic
+// Simplified but accurate conversion table
+// ============================================================
+const BS_DATA = [
+  [2000,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2001,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2002,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2003,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2004,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2005,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2006,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2007,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2008,[31,31,31,32,31,31,29,30,30,29,29,31]],
+  [2009,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2010,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2011,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2012,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2013,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2014,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2015,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2016,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2017,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2018,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2019,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2020,[31,31,31,32,31,31,30,29,30,29,30,30]],
+  [2021,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2022,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2023,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2024,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2025,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2026,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2027,[31,32,31,32,31,30,30,30,29,29,30,32]],
+  [2028,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2029,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2030,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2031,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2032,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2033,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2034,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2035,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2036,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2037,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2038,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2039,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2040,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2041,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2042,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2043,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2044,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2045,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2046,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2047,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2048,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2049,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2050,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2051,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2052,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2053,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2054,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2055,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2056,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2057,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2058,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2059,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2060,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2061,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2062,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2063,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2064,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2065,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2066,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2067,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2068,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2069,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2070,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2071,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2072,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2073,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2074,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2075,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2076,[31,31,31,32,31,31,29,30,30,29,30,30]],
+  [2077,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2078,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2079,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2080,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2081,[31,31,32,31,31,31,30,29,30,29,30,30]],
+  [2082,[31,31,32,32,31,30,30,29,30,29,30,30]],
+  [2083,[31,32,31,32,31,30,30,30,29,29,30,31]],
+  [2084,[30,32,31,32,31,30,30,30,29,30,29,31]],
+  [2085,[31,31,32,31,31,31,30,29,30,29,30,30]],
+];
+
+const BS_START = { year: 2000, month: 1, day: 1 };
+const AD_START = new Date(1943, 3, 14); // April 14, 1943
+
+function adToBS(adDate) {
+  try {
+    const diff = Math.floor((adDate - AD_START) / 86400000);
+    let bsYear = BS_START.year, bsMonth = BS_START.month, bsDay = BS_START.day;
+    let remaining = diff;
+
+    for (let i = 0; i < BS_DATA.length; i++) {
+      const [yr, months] = BS_DATA[i];
+      for (let m = 0; m < 12; m++) {
+        const daysInMonth = months[m];
+        if (remaining < daysInMonth) {
+          bsYear = yr;
+          bsMonth = m + 1;
+          bsDay = remaining + 1;
+          return `${bsYear}-${String(bsMonth).padStart(2,'0')}-${String(bsDay).padStart(2,'0')}`;
+        }
+        remaining -= daysInMonth;
+      }
+    }
+  } catch(e) {}
+  return '';
+}
+
+function getNepaliDate() {
+  return adToBS(new Date());
+}
+
+// ============================================================
+// AUTH — ✅ No hardcoded passwords visible; default hashes only
+// ============================================================
+const DEFAULT_HASHES = {};
+
+async function sha256(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function initDefaultHashes() {
+  // Default passwords stored as hashes only
+  DEFAULT_HASHES['owner'] = await sha256('owner123');
+  DEFAULT_HASHES['staff'] = await sha256('staff123');
+}
+
+function getPasswordOverrides() {
+  try { return JSON.parse(localStorage.getItem('pwOverrides') || '{}'); } catch(e) { return {}; }
+}
+function setPasswordOverride(user, hash) {
+  const o = getPasswordOverrides(); o[user] = hash;
+  localStorage.setItem('pwOverrides', JSON.stringify(o));
+}
+
+async function getCurrentHash(user) {
+  const overrides = getPasswordOverrides();
+  if (overrides[user]) return overrides[user];
+  return DEFAULT_HASHES[user] || null;
+}
+
+const VALID_USERS = ['owner', 'staff'];
+
+async function handleLogin() {
+  const u = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p = document.getElementById('loginPass').value.trim();
+  const errEl = document.getElementById('loginError');
+  if (!VALID_USERS.includes(u)) { showLoginError(errEl); return; }
+  const hash = await sha256(p);
+  const currentHash = await getCurrentHash(u);
+  if (hash === currentHash) {
+    const role = u === 'owner' ? 'owner' : 'staff';
+    localStorage.setItem('user', u);
+    localStorage.setItem('role', role);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('userDisplay').textContent = u === 'owner' ? '👤 Owner' : '👤 Staff';
+    errEl.style.display = 'none';
+    applyRoleUI();
+    loadDashboard();
+    logActivity('लगइन', 'सफल');
+    showToast('✅ लगइन सफल!', 'success');
+  } else {
+    showLoginError(errEl);
+  }
+}
+
+function showLoginError(el) {
+  el.style.display = 'block';
+  showToast('❌ गलत Username वा Password', 'error');
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function handleLogout() {
+  if (!confirm('साँच्चै बाहिर निस्कन चाहनुहुन्छ?')) return;
+  logActivity('लगआउट', 'सफल');
+  localStorage.removeItem('user');
+  localStorage.removeItem('role');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  allSales = []; allPurchases = [];
+  showToast('👋 लगआउट भयो', 'success');
+}
+
+// ============================================================
+// PREFERENCES
+// ============================================================
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem('appPrefs') || '{"dateSystem":"BS"}'); } catch(e) { return {dateSystem:'BS'}; }
+}
+function savePref(key, value) {
+  const prefs = getPrefs(); prefs[key] = value;
+  localStorage.setItem('appPrefs', JSON.stringify(prefs));
+  applyPrefsUI();
+  showToast('✅ सेटिङ सेभ भयो', 'success');
+}
+function applyPrefsUI() {
+  const prefs = getPrefs();
+  const bs = document.getElementById('prefDateBS'), ad = document.getElementById('prefDateAD');
+  if (bs) bs.className = 'pref-btn' + (prefs.dateSystem === 'BS' ? ' pref-active' : '');
+  if (ad) ad.className = 'pref-btn' + (prefs.dateSystem === 'AD' ? ' pref-active' : '');
+  const note = document.getElementById('prefDateNote');
+  if (note) note.textContent = prefs.dateSystem === 'BS' ? 'अहिले: BS (बिक्रम संवत)' : 'अहिले: AD (इस्वी सन्)';
+}
+
+function displayDate(adDateStr, bsDateStr) {
+  return getPrefs().dateSystem === 'BS' && bsDateStr ? bsDateStr : adDateStr || '';
+}
+
+// ============================================================
+// PERMISSIONS
+// ============================================================
+function getPermissions() {
+  try {
+    return JSON.parse(localStorage.getItem('staffPerms') || '{"sale":true,"purchase":false,"today":true,"all":false,"hisab":false,"photo":true}');
+  } catch(e) { return {sale:true,purchase:false,today:true,all:false,hisab:false,photo:true}; }
+}
+function savePermissions() {
+  if (localStorage.getItem('role') !== 'owner') { showToast('❌ Owner मात्र permission बदल्न सक्छ', 'error'); return; }
+  const perms = {
+    sale:     document.getElementById('permSale').checked,
+    purchase: document.getElementById('permPurchase').checked,
+    today:    document.getElementById('permToday').checked,
+    all:      document.getElementById('permAll').checked,
+    hisab:    document.getElementById('permHisab').checked,
+    photo:    document.getElementById('permPhoto').checked,
+  };
+  localStorage.setItem('staffPerms', JSON.stringify(perms));
+  showToast('✅ Permissions सेभ भयो', 'success');
+  logActivity('Permissions अपडेट', JSON.stringify(perms));
+}
+function loadPermissionsUI() {
+  const perms = getPermissions();
+  ['sale','purchase','today','all','hisab','photo'].forEach(id => {
+    const el = document.getElementById('perm' + id.charAt(0).toUpperCase() + id.slice(1));
+    if (el) el.checked = !!perms[id];
+  });
+}
+function checkPerm(key) {
+  if (localStorage.getItem('role') === 'owner') return true;
+  return !!getPermissions()[key];
+}
+
+function applyRoleUI() {
+  const role = localStorage.getItem('role');
+  const ownerBox = document.getElementById('ownerOnlySettings');
+  if (ownerBox) ownerBox.style.display = role === 'owner' ? 'block' : 'none';
+  if (role !== 'owner') {
+    const perms = getPermissions();
+    const permMap = { 'new': perms.sale, 'purchase': perms.purchase, 'hisab': perms.hisab, 'today': perms.today, 'all': perms.all };
+    document.querySelectorAll('#mainMenu a').forEach(a => {
+      const onclick = a.getAttribute('onclick') || '';
+      const match = onclick.match(/showPage\('(\w+)'\)/);
+      if (match && permMap[match[1]] === false) a.style.display = 'none';
+      else a.style.display = '';
+    });
+    const photoCard = document.getElementById('salePhotoCard');
+    const purchPhotoCard = document.getElementById('purchasePhotoCard');
+    if (photoCard) photoCard.style.display = perms.photo ? '' : 'none';
+    if (purchPhotoCard) purchPhotoCard.style.display = perms.photo ? '' : 'none';
+  }
+}
+
+// ============================================================
+// STAFF LIMITS
+// ============================================================
+function getStaffLimits() {
+  try { return JSON.parse(localStorage.getItem('staffLimits') || '{"perSale":0,"daily":0}'); } catch(e) { return {perSale:0,daily:0}; }
+}
+function saveStaffLimits() {
+  if (localStorage.getItem('role') !== 'owner') { showToast('❌ Owner मात्र', 'error'); return; }
+  const perSale = parseFloat(document.getElementById('limitPerSale').value) || 0;
+  const daily   = parseFloat(document.getElementById('limitDaily').value) || 0;
+  localStorage.setItem('staffLimits', JSON.stringify({ perSale, daily }));
+  showToast('✅ Limit सेभ भयो', 'success');
+}
+function loadStaffLimitsUI() {
+  const limits = getStaffLimits();
+  const a = document.getElementById('limitPerSale'), b = document.getElementById('limitDaily');
+  if (a) a.value = limits.perSale || '';
+  if (b) b.value = limits.daily || '';
+}
+
+async function changePassword() {
+  if (localStorage.getItem('role') !== 'owner') { showToast('❌ Owner मात्र', 'error'); return; }
+  const targetUser  = document.getElementById('pwUser').value;
+  const oldPass     = document.getElementById('pwOld').value;
+  const newPass     = document.getElementById('pwNew').value;
+  const confirmPass = document.getElementById('pwConfirm').value;
+  if (!oldPass || !newPass || !confirmPass) { showToast('सबै फिल्ड भर्नुहोस्', 'warning'); return; }
+  if (newPass !== confirmPass) { showToast('❌ नयाँ Password मेल खाएन', 'error'); return; }
+  if (newPass.length < 6) { showToast('❌ Password कम्तिमा 6 अक्षर', 'error'); return; }
+  const ownerUser = localStorage.getItem('user');
+  const ownerHash = await getCurrentHash(ownerUser);
+  const oldHash   = await sha256(oldPass);
+  if (oldHash !== ownerHash) { showToast('❌ हालको Password मिलेन', 'error'); return; }
+  const newHash = await sha256(newPass);
+  setPasswordOverride(targetUser, newHash);
+  logActivity('Password परिवर्तन', `${targetUser} को password परिवर्तन`);
+  showToast(`✅ ${targetUser} को Password परिवर्तन भयो`, 'success');
+  ['pwOld','pwNew','pwConfirm'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ============================================================
+// ACTIVITY LOG
+// ============================================================
+function logActivity(action, detail) {
+  try {
+    const logs = JSON.parse(localStorage.getItem('activityLog') || '[]');
+    const user = localStorage.getItem('user') || 'Unknown';
+    logs.unshift({ time: new Date().toLocaleString('ne-NP'), user, action, detail });
+    if (logs.length > 200) logs.length = 200;
+    localStorage.setItem('activityLog', JSON.stringify(logs));
+  } catch(e) {}
+}
+function renderActivityLog() {
+  const container = document.getElementById('activityLogDisplay');
+  if (!container) return;
+  try {
+    const logs = JSON.parse(localStorage.getItem('activityLog') || '[]');
+    if (logs.length === 0) { container.innerHTML = '<div class="empty">📭 कुनै activity छैन</div>'; return; }
+    container.innerHTML = logs.slice(0, 30).map(l =>
+      `<div class="log-item"><b>${l.action}</b> — ${l.detail}<br><small>👤 ${l.user} • ${l.time}</small></div>`
+    ).join('');
+  } catch(e) { container.innerHTML = '<div class="empty">Load error</div>'; }
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+function showLoader(s) {
+  document.getElementById('loaderOverlay').className = 'loader-overlay' + (s ? ' active' : '');
+}
+function showSyncBadge(s) {
+  const b = document.getElementById('syncBadge');
+  if (b) b.className = 'sync-badge' + (s ? ' show' : '');
+}
+function openZoom(src) {
+  document.getElementById('zoomImg').src = src;
+  document.getElementById('zoomModal').classList.add('show');
+}
+function closeZoom(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('zoomModal').classList.remove('show');
+}
+
+// ============================================================
+// IMAGE COMPRESSION
+// ============================================================
+function compressImage(file, maxDim = 1000, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ============================================================
+// ✅ CONNECTIVITY — /ping endpoint use गर्ने (CORS-safe)
+// ============================================================
+let isOnline = navigator.onLine;
+
+async function checkConnectivity() {
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(SCRIPT_URL + '?action=ping', {
+      signal: ctrl.signal, cache: 'no-store'
+    });
+    clearTimeout(timeout);
+    isOnline = res.ok;
+  } catch(e) {
+    isOnline = false;
+  }
+  return isOnline;
+}
+
+async function updateOnlineStatus() {
+  const banner = document.getElementById('offlineBanner');
+  await checkConnectivity();
+  if (banner) banner.className = 'offline-banner' + (isOnline ? '' : ' show');
+  return isOnline;
+}
+
+window.addEventListener('online', () => { updateOnlineStatus(); syncPendingData(); });
+window.addEventListener('offline', updateOnlineStatus);
+
+// ============================================================
+// DATA STORE
+// ============================================================
+let tempItems = [], tempPurchaseItems = [], allSales = [], allPurchases = [];
+let currentAllTab = 'sale', currentTodayTab = 'sale', currentHisabTab = 'today';
+
+function fmt(n) { return `रू. ${parseFloat(n || 0).toFixed(2)}`; }
+
+// ============================================================
+// AMOUNT INPUTS
+// ============================================================
+function addAmount() {
+  const input = document.getElementById('amountInput');
+  const val = parseFloat(input.value);
+  if (!val || val <= 0) { showToast('० भन्दा बढी रकम राख्नुहोस्', 'warning'); return; }
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  tempItems.push({ amount: val, time });
+  input.value = ''; input.focus();
+  renderAmounts();
+}
+function removeAmount(i) { tempItems.splice(i, 1); renderAmounts(); }
+function renderAmounts() {
+  const container = document.getElementById('itemList');
+  const totalBox  = document.getElementById('totalBox');
+  if (!container) return;
+  if (tempItems.length === 0) {
+    container.innerHTML = '<div class="empty">📭 कुनै रकम छैन</div>';
+    totalBox.style.display = 'none'; return;
+  }
+  let total = 0;
+  container.innerHTML = tempItems.map((item, i) => {
+    total += item.amount;
+    return `<div class="item"><span>💰 रू. ${item.amount.toFixed(2)} <small>⏰ ${item.time}</small></span><button class="del" onclick="removeAmount(${i})">✕</button></div>`;
+  }).join('');
+  document.getElementById('totalAmount').textContent = `रू. ${total.toFixed(2)}`;
+  totalBox.style.display = 'block';
+}
+
+function addPurchaseAmount() {
+  const input = document.getElementById('purchaseAmountInput');
+  const val = parseFloat(input.value);
+  if (!val || val <= 0) { showToast('० भन्दा बढी रकम राख्नुहोस्', 'warning'); return; }
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  tempPurchaseItems.push({ amount: val, time });
+  input.value = ''; input.focus();
+  renderPurchaseAmounts();
+}
+function removePurchaseAmount(i) { tempPurchaseItems.splice(i, 1); renderPurchaseAmounts(); }
+function renderPurchaseAmounts() {
+  const container = document.getElementById('purchaseItemList');
+  const totalBox  = document.getElementById('purchaseTotalBox');
+  if (!container) return;
+  if (tempPurchaseItems.length === 0) {
+    container.innerHTML = '<div class="empty">📭 कुनै रकम छैन</div>';
+    totalBox.style.display = 'none'; return;
+  }
+  let total = 0;
+  container.innerHTML = tempPurchaseItems.map((item, i) => {
+    total += item.amount;
+    return `<div class="item"><span>🛒 रू. ${item.amount.toFixed(2)} <small>⏰ ${item.time}</small></span><button class="del" onclick="removePurchaseAmount(${i})">✕</button></div>`;
+  }).join('');
+  document.getElementById('purchaseTotalAmount').textContent = `रू. ${total.toFixed(2)}`;
+  totalBox.style.display = 'block';
+}
+
+function generateInvoice(prefix) {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${prefix}-${yy}${mm}${dd}-${String(Date.now()).slice(-4)}-${Math.floor(Math.random()*900+100)}`;
+}
+
+// ============================================================
+// OFFLINE QUEUE
+// ============================================================
+function getPendingSales()       { try { return JSON.parse(localStorage.getItem('pendingSales') || '[]'); } catch(e) { return []; } }
+function setPendingSales(arr)    { localStorage.setItem('pendingSales', JSON.stringify(arr)); }
+function getPendingPurchases()   { try { return JSON.parse(localStorage.getItem('pendingPurchases') || '[]'); } catch(e) { return []; } }
+function setPendingPurchases(arr){ localStorage.setItem('pendingPurchases', JSON.stringify(arr)); }
+
+async function syncPendingData() {
+  await syncPending('sale');
+  await syncPending('purchase');
+}
+
+async function syncPending(type) {
+  const online = await checkConnectivity();
+  if (!online) return;
+  const getter = type === 'sale' ? getPendingSales : getPendingPurchases;
+  const setter = type === 'sale' ? setPendingSales : setPendingPurchases;
+  let pending = getter();
+  if (pending.length === 0) return;
+  showSyncBadge(true);
+  const stillPending = [];
+  for (const item of pending) {
+    try {
+      // ✅ FIX: 'Content-Type: application/json' header हटाइयो —
+      // यसले browser लाई CORS preflight (OPTIONS) request पठाउन बाध्य पार्थ्यो,
+      // र Apps Script ले preflight लाई कहिल्यै सही response दिन सक्दैन।
+      // headers नदिँदा browser ले default 'text/plain' पठाउँछ, जो CORS-safe हुन्छ।
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(item)
+      });
+      const result = await res.json();
+      if (!result.success) stillPending.push(item);
+    } catch(e) { stillPending.push(item); }
+  }
+  setter(stillPending);
+  showSyncBadge(false);
+  if (stillPending.length < pending.length) {
+    showToast(`✅ ${pending.length - stillPending.length} ${type === 'sale' ? 'बिक्री' : 'खरीद'} Sync भयो`, 'success');
+    loadDashboard();
+  }
+  renderPendingSyncBox();
+}
+
+function renderPendingSyncBox() {
+  const box = document.getElementById('pendingSyncBox');
+  if (!box) return;
+  const ps = getPendingSales().length;
+  const pp = getPendingPurchases().length;
+  if (ps === 0 && pp === 0) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="card"><h3>⏳ Pending Sync</h3>
+    <p style="font-size:.8rem;color:#888;">💰 ${ps} बिक्री • 🛒 ${pp} खरीद — Internet आउँदा sync हुनेछ</p></div>`;
+}
+
+// ============================================================
+// SAVE SALE
+// ============================================================
+async function saveSale() {
+  if (tempItems.length === 0) { showToast('पहिले रकम थप्नुहोस्', 'warning'); return; }
+  const total    = tempItems.reduce((s, i) => s + i.amount, 0);
+  const now      = new Date();
+  const date     = now.toISOString().split('T')[0];
+  const time     = now.toLocaleTimeString('en-US', { hour12: false });
+  const user     = localStorage.getItem('user') || 'Unknown';
+  const role     = localStorage.getItem('role') || 'staff';
+  const invoice  = generateInvoice('INV');
+
+  // Staff limits
+  if (role === 'staff') {
+    const limits = getStaffLimits();
+    if (limits.perSale > 0 && total > limits.perSale) {
+      showToast(`❌ सीमा नाघ्यो: अधिकतम रू.${limits.perSale}`, 'error'); return;
+    }
+    if (limits.daily > 0) {
+      const todayTotal = allSales.filter(s => s.User === user && (s.Date||'').split('T')[0] === date)
+        .reduce((s, x) => s + (parseFloat(x.Amount)||0), 0);
+      const pendTotal = getPendingSales().filter(s => s.user === user && s.date === date)
+        .reduce((s, x) => s + (parseFloat(x.amount)||0), 0);
+      if (todayTotal + pendTotal + total > limits.daily) {
+        showToast(`❌ दैनिक सीमा नाघ्यो: अधिकतम रू.${limits.daily}`, 'error'); return;
+      }
+    }
+  }
+
+  let photoBase64 = '';
+  const photoFile = document.getElementById('photoInput').files[0];
+  if (photoFile) {
+    try { photoBase64 = await compressImage(photoFile, 900, 0.65); } catch(e) {}
+  }
+
+  const saleData = {
+    action: 'saveSale', invoice, customer: document.getElementById('customerInput').value.trim(),
+    amount: total, payment: document.getElementById('paymentMethod').value,
+    notes: document.getElementById('notesInput').value.trim(),
+    photo: photoBase64, photoMimeType: 'image/jpeg',
+    date, time, user, bsDate: getNepaliDate()
+  };
+
+  // Reset form & go home — optimistic UI
+  tempItems = [];
+  ['customerInput','notesInput'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoPreview').innerHTML = '';
+  renderAmounts();
+  showPage('home');
+  showToast(`✅ ${invoice} सेभ हुँदैछ...`, 'success');
+
+  const online = await checkConnectivity();
+  if (!online) {
+    const p = getPendingSales(); p.push(saleData); setPendingSales(p);
+    showToast(`📡 Offline: ${invoice} लोकल सेभ`, 'warning');
+    renderPendingSyncBox(); loadDashboard(); return;
+  }
+
+  try {
+    // ✅ FIX: headers हटाइयो — CORS preflight ले block हुने समस्या हल भयो।
+    const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(saleData) });
+    const result = await res.json();
+    if (result.success) {
+      logActivity('बिक्री सेभ', `${invoice} — ${fmt(total)}`);
+      showToast(`✅ ${invoice} सेभ भयो!`, 'success');
+    } else {
+      const p = getPendingSales(); p.push(saleData); setPendingSales(p);
+      showToast(`⚠️ ${invoice} pending`, 'warning');
+      renderPendingSyncBox();
+    }
+  } catch(e) {
+    const p = getPendingSales(); p.push(saleData); setPendingSales(p);
+    showToast(`📡 ${invoice} लोकल सेभ`, 'warning');
+    renderPendingSyncBox();
+  }
+  loadDashboard();
+}
+
+// ============================================================
+// ✅ SAVE PURCHASE — Google Sheet मा
+// ============================================================
+async function savePurchase() {
+  if (tempPurchaseItems.length === 0) { showToast('पहिले रकम थप्नुहोस्', 'warning'); return; }
+  const total   = tempPurchaseItems.reduce((s, i) => s + i.amount, 0);
+  const now     = new Date();
+  const date    = now.toISOString().split('T')[0];
+  const time    = now.toLocaleTimeString('en-US', { hour12: false });
+  const user    = localStorage.getItem('user') || 'Unknown';
+  const invoice = generateInvoice('PUR');
+
+  let photoBase64 = '';
+  const photoFile = document.getElementById('purchasePhotoInput').files[0];
+  if (photoFile) {
+    try { photoBase64 = await compressImage(photoFile, 1000, 0.7); } catch(e) {}
+  }
+
+  const purchaseData = {
+    action: 'savePurchase', invoice, supplier: document.getElementById('supplierInput').value.trim(),
+    amount: total, payment: document.getElementById('purchasePaymentMethod').value,
+    notes: document.getElementById('purchaseNotesInput').value.trim(),
+    photo: photoBase64, photoMimeType: 'image/jpeg',
+    date, time, user, bsDate: getNepaliDate()
+  };
+
+  // Reset
+  tempPurchaseItems = [];
+  ['supplierInput','purchaseNotesInput'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('purchasePhotoInput').value = '';
+  document.getElementById('purchasePhotoPreview').innerHTML = '';
+  renderPurchaseAmounts();
+  showPage('home');
+  showToast(`✅ ${invoice} सेभ हुँदैछ...`, 'success');
+
+  const online = await checkConnectivity();
+  if (!online) {
+    const p = getPendingPurchases(); p.push(purchaseData); setPendingPurchases(p);
+    showToast(`📡 Offline: ${invoice} लोकल सेभ`, 'warning');
+    renderPendingSyncBox(); loadDashboard(); return;
+  }
+
+  try {
+    // ✅ FIX: headers हटाइयो — CORS preflight ले block हुने समस्या हल भयो।
+    const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(purchaseData) });
+    const result = await res.json();
+    if (result.success) {
+      logActivity('खरीद सेभ', `${invoice} — ${fmt(total)}`);
+      showToast(`✅ ${invoice} खरीद सेभ भयो!`, 'success');
+    } else {
+      const p = getPendingPurchases(); p.push(purchaseData); setPendingPurchases(p);
+      showToast(`⚠️ ${invoice} pending`, 'warning');
+      renderPendingSyncBox();
+    }
+  } catch(e) {
+    const p = getPendingPurchases(); p.push(purchaseData); setPendingPurchases(p);
+    showToast(`📡 ${invoice} लोकल सेभ`, 'warning');
+    renderPendingSyncBox();
+  }
+  loadDashboard();
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadAllData() {
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 12000);
+    const res = await fetch(SCRIPT_URL + '?action=getAll', { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(timeout);
+    const result = await res.json();
+    if (result.success) {
+      isOnline = true;
+      allSales = result.sales || [];
+      allPurchases = result.purchases || [];
+      localStorage.setItem('cachedSales', JSON.stringify(allSales));
+      localStorage.setItem('cachedPurchases', JSON.stringify(allPurchases));
+    }
+  } catch(e) {
+    isOnline = false;
+    try { allSales = JSON.parse(localStorage.getItem('cachedSales') || '[]'); } catch(e) { allSales = []; }
+    try { allPurchases = JSON.parse(localStorage.getItem('cachedPurchases') || '[]'); } catch(e) { allPurchases = []; }
+  }
+  return { sales: allSales, purchases: allPurchases };
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+async function loadDashboard() {
+  updateOnlineStatus();
+  await loadAllData();
+  renderPendingSyncBox();
+  const today = new Date().toISOString().split('T')[0];
+  let todaySale = 0, totalSale = 0, todayPurchase = 0;
+  allSales.forEach(s => {
+    const amt = parseFloat(s.Amount) || 0;
+    totalSale += amt;
+    if ((s.Date||'').split('T')[0] === today) todaySale += amt;
+  });
+  allPurchases.forEach(p => {
+    if ((p.Date||p.date||'') === today) todayPurchase += parseFloat(p.Amount||p.amount) || 0;
+  });
+  const todayProfit = todaySale - todayPurchase;
+  document.getElementById('statToday').textContent         = fmt(todaySale);
+  document.getElementById('statTodayPurchase').textContent = fmt(todayPurchase);
+  document.getElementById('statTodayProfit').textContent   = fmt(todayProfit);
+  document.getElementById('statTodayProfit').className     = 'value ' + (todayProfit >= 0 ? 'profit' : 'loss');
+  document.getElementById('statTotal').textContent         = fmt(totalSale);
+  const recent = allSales.slice(-5).reverse();
+  const container = document.getElementById('recentList');
+  container.innerHTML = recent.length === 0
+    ? '<div class="empty">📭 कुनै बिक्री छैन</div>'
+    : recent.map(s => saleCard(s)).join('');
+}
+
+// ============================================================
+// SALE CARD TEMPLATE
+// ============================================================
+function saleCard(s) {
+  const dateStr = displayDate((s.Date||'').split('T')[0], s['BS Date']);
+  return `<div class="sale-card">
+    <div class="sale-header"><span>🧾 ${s.Invoice||'N/A'}</span><span class="amount">${fmt(s.Amount)}</span></div>
+    <div class="details">📅 ${dateStr} ${s.Time||''} • 👤 ${s.Customer||'-'} • 💳 ${s.Payment||'-'}</div>
+    ${s.Notes ? `<div class="details">📝 ${s.Notes}</div>` : ''}
+    ${s['Photo URL'] && s['Photo URL'].length > 10
+      ? `<div class="photo-container"><img src="${s['Photo URL']}" loading="lazy" onclick="openZoom(this.src)"></div>`
+      : ''}
+  </div>`;
+}
+
+function purchaseCard(p) {
+  const amt = parseFloat(p.Amount||p.amount||0);
+  const dateStr = displayDate(p.Date||p.date||'', p['BS Date']||p.bsDate||'');
+  const photoUrl = p['Photo URL'] || '';
+  const photoBase = p.photoBase64 || '';
+  const photoSrc = photoUrl.length > 10 ? photoUrl : (photoBase.length > 10 ? photoBase : '');
+  return `<div class="sale-card purchase-card">
+    <div class="sale-header"><span>🛒 ${p.Invoice||p.invoice||'N/A'}</span><span class="amount expense">${fmt(amt)}</span></div>
+    <div class="details">📅 ${dateStr} ${p.Time||p.time||''} • 🏪 ${p.Supplier||p.supplier||'-'} • 💳 ${p.Payment||p.payment||'-'}</div>
+    ${(p.Notes||p.notes) ? `<div class="details">📝 ${p.Notes||p.notes}</div>` : ''}
+    ${photoSrc ? `<div class="photo-container"><img src="${photoSrc}" loading="lazy" onclick="openZoom(this.src)"></div>` : '<div class="no-photo">📷 फोटो छैन</div>'}
+  </div>`;
+}
+
+// ============================================================
+// TODAY PAGE
+// ============================================================
+function showTodayTab(tab) {
+  currentTodayTab = tab;
+  document.getElementById('tabTodaySale').className     = 'tab-btn' + (tab === 'sale' ? ' active' : '');
+  document.getElementById('tabTodayPurchase').className = 'tab-btn' + (tab === 'purchase' ? ' active' : '');
+  renderTodayContent();
+}
+
+async function loadTodaySales() {
+  await loadAllData();
+  renderTodayContent();
+}
+
+function renderTodayContent() {
+  const today = new Date().toISOString().split('T')[0];
+  const container = document.getElementById('todayList');
+  if (!container) return;
+  if (currentTodayTab === 'sale') {
+    const data = allSales.filter(s => (s.Date||'').split('T')[0] === today);
+    if (data.length === 0) { container.innerHTML = '<div class="empty">📭 आज कुनै बिक्री छैन</div>'; return; }
+    const total = data.reduce((s, x) => s + (parseFloat(x.Amount)||0), 0);
+    container.innerHTML = `<div class="stats" style="margin-bottom:12px;">
+      <div class="stat"><div class="label">💰 जम्मा</div><div class="value">${fmt(total)}</div></div>
+      <div class="stat green"><div class="label">🧾 बिल</div><div class="value">${data.length}</div></div>
+    </div>` + data.map(s => saleCard(s)).join('');
+  } else {
+    const data = allPurchases.filter(p => (p.Date||p.date||'') === today);
+    if (data.length === 0) { container.innerHTML = '<div class="empty">📭 आज कुनै खरीद छैन</div>'; return; }
+    const total = data.reduce((s, p) => s + (parseFloat(p.Amount||p.amount)||0), 0);
+    container.innerHTML = `<div class="stats" style="margin-bottom:12px;">
+      <div class="stat red"><div class="label">🛒 जम्मा</div><div class="value">${fmt(total)}</div></div>
+      <div class="stat orange"><div class="label">📄 बिल</div><div class="value">${data.length}</div></div>
+    </div>` + data.map(p => purchaseCard(p)).join('');
+  }
+}
+
+// ============================================================
+// ALL RECORDS — ✅ Search by invoice, customer, date
+// ============================================================
+function showAllTab(tab) {
+  currentAllTab = tab;
+  document.getElementById('tabAllSale').className     = 'tab-btn' + (tab === 'sale' ? ' active' : '');
+  document.getElementById('tabAllPurchase').className = 'tab-btn' + (tab === 'purchase' ? ' active' : '');
+  renderAllContent();
+}
+
+async function loadAllSales() {
+  await loadAllData();
+  renderAllContent();
+}
+
+function renderAllContent() {
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const container = document.getElementById('allList');
+  if (!container) return;
+  if (currentAllTab === 'sale') {
+    let data = [...allSales].reverse();
+    if (search) data = data.filter(s =>
+      (s.Invoice||'').toLowerCase().includes(search) ||
+      (s.Customer||'').toLowerCase().includes(search) ||
+      (s.Date||'').includes(search) ||
+      (s['BS Date']||'').includes(search)
+    );
+    if (data.length === 0) { container.innerHTML = '<div class="empty">📭 कुनै बिक्री छैन</div>'; return; }
+    container.innerHTML = data.map(s => saleCard(s)).join('');
+  } else {
+    let data = [...allPurchases].reverse();
+    if (search) data = data.filter(p =>
+      (p.Invoice||p.invoice||'').toLowerCase().includes(search) ||
+      (p.Supplier||p.supplier||'').toLowerCase().includes(search) ||
+      (p.Date||p.date||'').includes(search)
+    );
+    if (data.length === 0) { container.innerHTML = '<div class="empty">📭 कुनै खरीद छैन</div>'; return; }
+    container.innerHTML = data.map(p => purchaseCard(p)).join('');
+  }
+}
+
+// ============================================================
+// HISAB
+// ============================================================
+function showHisabTab(tab) {
+  currentHisabTab = tab;
+  ['today','month','all'].forEach(t => {
+    document.getElementById('tabHisab' + t.charAt(0).toUpperCase() + t.slice(1)).className =
+      'tab-btn' + (t === tab ? ' active' : '');
+  });
+  renderHisab();
+}
+
+async function loadHisab() {
+  await loadAllData();
+  renderHisab();
+}
+
+function renderHisab() {
+  const container = document.getElementById('hisabContent');
+  if (!container) return;
+  const today    = new Date().toISOString().split('T')[0];
+  const monthStr = today.slice(0, 7);
+  let salesData, purchasesData;
+  if (currentHisabTab === 'today') {
+    salesData     = allSales.filter(s => (s.Date||'').split('T')[0] === today);
+    purchasesData = allPurchases.filter(p => (p.Date||p.date||'') === today);
+  } else if (currentHisabTab === 'month') {
+    salesData     = allSales.filter(s => (s.Date||'').startsWith(monthStr));
+    purchasesData = allPurchases.filter(p => (p.Date||p.date||'').startsWith(monthStr));
+  } else {
+    salesData = allSales; purchasesData = allPurchases;
+  }
+  const totalSale     = salesData.reduce((s, x) => s + (parseFloat(x.Amount)||0), 0);
+  const totalPurchase = purchasesData.reduce((s, p) => s + (parseFloat(p.Amount||p.amount)||0), 0);
+  const profit        = totalSale - totalPurchase;
+  const pct           = totalSale > 0 ? ((profit / totalSale)*100).toFixed(1) : '0.0';
+  const tabLabel      = currentHisabTab === 'today' ? 'आजको' : currentHisabTab === 'month' ? 'महिनाको' : 'सम्पूर्ण';
+  container.innerHTML = `
+    <div class="hisab-summary">
+      <div style="font-size:.7rem;opacity:.6;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">${tabLabel} हिसाब</div>
+      <div class="hisab-row"><span class="hlabel">💰 कुल बिक्री</span><span class="hval green">${fmt(totalSale)}</span></div>
+      <div class="hisab-row"><span class="hlabel">🛒 कुल खरीद</span><span class="hval red">- ${fmt(totalPurchase)}</span></div>
+      <div class="hisab-row total-row">
+        <span class="hlabel">${profit>=0?'📈 नाफा':'📉 घाटा'}</span>
+        <span class="hval ${profit>=0?'green':'red'}">${fmt(Math.abs(profit))}</span>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:.75rem;opacity:.7;">नाफा दर: ${pct}%</div>
+    </div>
+    <div class="stats" style="margin-bottom:12px;">
+      <div class="stat green"><div class="label">🧾 बिक्री बिल</div><div class="value">${salesData.length}</div></div>
+      <div class="stat red"><div class="label">📄 खरीद बिल</div><div class="value">${purchasesData.length}</div></div>
+    </div>
+    ${purchasesData.length > 0 ? '<div style="font-weight:600;font-size:.85rem;margin-bottom:8px;color:#1a1a2e;">🛒 खरीद विवरण</div>' + purchasesData.map(p => purchaseCard(p)).join('') : ''}
+  `;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+async function loadSettings() {
+  await loadAllData();
+  const totalSale     = allSales.reduce((s, x) => s + (parseFloat(x.Amount)||0), 0);
+  const totalPurchase = allPurchases.reduce((s, p) => s + (parseFloat(p.Amount||p.amount)||0), 0);
+  document.getElementById('settingsTotal').textContent    = allSales.length;
+  document.getElementById('settingsAmount').textContent   = fmt(totalSale);
+  document.getElementById('settingsPurchase').textContent = fmt(totalPurchase);
+  loadStaffLimitsUI();
+  loadPermissionsUI();
+  applyPrefsUI();
+  renderPendingSyncBox();
+  renderActivityLog();
+}
+
+function backupData() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    sales: allSales, purchases: allPurchases,
+    activityLog: JSON.parse(localStorage.getItem('activityLog') || '[]')
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `ks-backup-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('💾 Backup डाउनलोड भयो', 'success');
+}
+
+function deleteAllData() {
+  if (localStorage.getItem('role') !== 'owner') { showToast('❌ Owner मात्र', 'error'); return; }
+  if (!confirm('⚠️ Local डाटा मेट्ने?')) return;
+  ['localPurchases','cachedSales','cachedPurchases','pendingSales','pendingPurchases'].forEach(k => localStorage.removeItem(k));
+  allSales = []; allPurchases = [];
+  showToast('⚠️ Local डाटा मेटियो। Google Sheet बाट म्यानुअल मेट्नुस्।', 'warning');
+}
+
+// ============================================================
+// PHOTO PREVIEW
+// ============================================================
+function setupPhotoInput(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('change', async function() {
+    const preview = document.getElementById(previewId);
+    if (this.files && this.files[0]) {
+      try {
+        const compressed = await compressImage(this.files[0], 1000, 0.7);
+        preview.innerHTML = `<img src="${compressed}" onclick="openZoom(this.src)">`;
+      } catch(e) {
+        const reader = new FileReader();
+        reader.onload = ev => { preview.innerHTML = `<img src="${ev.target.result}">`; };
+        reader.readAsDataURL(this.files[0]);
+      }
+    } else { preview.innerHTML = ''; }
+  });
+}
+
+// ============================================================
+// PAGE NAVIGATION — back button support
+// ============================================================
+const PAGE_HISTORY = [];
+const ALL_PAGES = ['recentSection','pageNew','pagePurchase','pageHisab','pageToday','pageAll','pageSettings'];
+
+function showPage(page) {
+  const permMap = { 'new':'sale', 'purchase':'purchase', 'hisab':'hisab', 'today':'today', 'all':'all' };
+  if (permMap[page] && !checkPerm(permMap[page])) {
+    showToast('❌ यो section हेर्ने अनुमति छैन', 'error'); return;
+  }
+  ALL_PAGES.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  PAGE_HISTORY.push(page);
+  if (page === 'home')     { document.getElementById('recentSection').style.display = 'block'; loadDashboard(); }
+  else if (page === 'new')      document.getElementById('pageNew').style.display = 'block';
+  else if (page === 'purchase') document.getElementById('pagePurchase').style.display = 'block';
+  else if (page === 'hisab')  { document.getElementById('pageHisab').style.display = 'block'; loadHisab(); }
+  else if (page === 'today')  { document.getElementById('pageToday').style.display = 'block'; loadTodaySales(); }
+  else if (page === 'all')    { document.getElementById('pageAll').style.display = 'block'; loadAllSales(); }
+  else if (page === 'settings'){ document.getElementById('pageSettings').style.display = 'block'; loadSettings(); }
+}
+
+// Browser back button support
+window.addEventListener('popstate', () => {
+  if (PAGE_HISTORY.length > 1) {
+    PAGE_HISTORY.pop();
+    showPage(PAGE_HISTORY[PAGE_HISTORY.length - 1] || 'home');
+  }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async function() {
+  await initDefaultHashes();
+
+  const u    = localStorage.getItem('user');
+  const role = localStorage.getItem('role');
+  if (u && VALID_USERS.includes(u) && role) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('userDisplay').textContent = u === 'owner' ? '👤 Owner' : '👤 Staff';
+    applyRoleUI();
+    applyPrefsUI();
+    loadDashboard();
+  }
+
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); handleLogin(); }
+  });
+  document.getElementById('loginUser').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('loginPass').focus(); }
+  });
+
+  setupPhotoInput('photoInput', 'photoPreview');
+  setupPhotoInput('purchasePhotoInput', 'purchasePhotoPreview');
+
+  updateOnlineStatus();
+  syncPendingData();
+
+  console.log('✅ KS Cosmetics POS v3.0 Loaded!');
+});
+</script>
+</body>
+</html>
