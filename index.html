@@ -134,6 +134,12 @@ textarea.input-full{resize:vertical;min-height:50px}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
 .stat,.card,.sale-card,.menu a{animation:fadeInUp .4s ease-out}
 </style>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="KS Cosmetics">
+<link rel="apple-touch-icon" href="/icon-192.png">
 </head>
 <body>
 
@@ -1436,6 +1442,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   syncPendingData();
   console.log('✅ KS Cosmetics POS v4.0 Loaded!');
 });
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
